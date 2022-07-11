@@ -1,0 +1,10 @@
+<launch>
+
+  <arg name="online"          value="false"/>
+  <arg name="cloud_topic"     value="/camera/depth/color/points"/>
+  <arg name="cloud_file"      value="$(find hyrecro_pcl)/maps/set0/map_Generalized.pcd"/>
+
+  <node name="show_planes" pkg="hyrecro_pcl" type="show_planes" output="screen"  
+  args="$(arg online) $(arg cloud_topic) $(arg cloud_file)"/>
+
+</launch>

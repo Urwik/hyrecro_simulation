@@ -1,0 +1,625 @@
+/*
+  REGISTRA POR PARES 2 NUBES DE PUNTOS ESPECIFICADAS DENTRO DEL MAIN()
+*/
+// cpp
+#include <iostream>
+#include <fstream>
+#include <boost/filesystem.hpp>
+#include <Eigen/Core>
+#include <Eigen/Geometry> 
+
+// PCL
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/PCLPointCloud2.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/features/normal_3d.h>
+
+  // PCL FILTERS
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/project_inliers.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/normal_space.h>
+
+  // SEGMENTATION
+#include <pcl/segmentation/sac_segmentation.h>
+
+  // REGISTRATION
+#include <pcl/registration/icp.h>
+#include <pcl/registration/gicp.h>
+#include <pcl/registration/correspondence_estimation.h>
+#include <pcl/registration/correspondence_rejection_distance.h>
+
+
+  // RANSAC
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+
+  // PCL VISUALIZATION
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/point_cloud_color_handlers.h>
+#include <pcl/visualization/cloud_viewer.h>
+
+
+//****************************************************************************//
+// TYPE DEFINITIONS ////////////////////////////////////////////////////////////
+
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT> PointCloud;
+
+typedef pcl::PointNormal PointNormalT;
+typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
+
+typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
+
+typedef pcl::visualization::PointCloudColorHandlerCustom<PointT> CloudColor;
+typedef pcl::visualization::PointCloudColorHandlerCustom<PointNormalT> NormalCloudColor;
+typedef pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZI> IntensityCloudColor;
+
+
+// ************************************************************************** //
+
+
+// ************************************************************************** //
+// AVAILABLE FUNCTIONS /////////////////////////////////////////////////////////
+
+// FEATURE EXTRACTION //
+
+PointCloud::Ptr             getPlaneCoefsCloud(PointCloud::Ptr original, int maxIterations, float threshold);
+
+PointCloudIntensity::Ptr    getIntensityPlaneCoefsCloud(PointCloud::Ptr input, int maxIterations, float threshold);
+
+PointCloudWithNormals::Ptr  getCentroidNormalPlaneCloud(PointCloud::Ptr original, int maxIterations, float threshold);
+
+pcl::PointCloud<pcl::Normal>::Ptr getCloudNormals(PointCloud::Ptr input, float radius);
+
+
+// REGISTRATION //
+
+Eigen::Matrix4f icpDefault(PointCloud::Ptr source, PointCloud::Ptr target);
+
+Eigen::Matrix4f icpGeneralized(PointCloud::Ptr source, PointCloud::Ptr target);
+
+Eigen::Matrix4f icpWithNormals(PointCloudWithNormals::Ptr source, PointCloudWithNormals::Ptr target);
+
+Eigen::Matrix4f icpWithIntensity(PointCloudIntensity::Ptr source, PointCloudIntensity::Ptr target);
+
+Eigen::Matrix4f estimMth(PointCloud::Ptr source, PointCloud::Ptr target);
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+int main(int argc, char **argv)
+{
+
+  // Get handlres for source and target cloud data /////////////////////////////
+  PointCloud::Ptr source (new PointCloud);
+  PointCloud::Ptr target (new PointCloud);
+
+  pcl::PCDReader reader;
+
+  reader.read("data0_sampled.pcd", *target);
+  reader.read("data1_sampled.pcd", *source);
+
+/*
+  // SAMPLING REPRESENTATIVE ///////////////////////////////////////////////////
+  pcl::NormalSpaceSampling<PointT, pcl::Normal> nss;
+  PointCloud::Ptr sampledTarget (new PointCloud);
+
+  nss.setInputCloud(target);
+  nss.setSample(21999);
+  nss.setSeed(74);
+  nss.setNormals(targetNormals);
+  nss.filter(*sampledTarget);
+
+ //normalVis.addPointCloud(sampledTarget);
+*/
+/*
+  // ESTIMATE CORRESPONDENCES //////////////////////////////////////////////////
+  pcl::CorrespondencesPtr corresps(new pcl::Correspondences);
+  pcl::registration::CorrespondenceEstimation<PointT, PointT> est;
+  est.setInputSource (source);
+  est.setInputTarget (target);
+  est.determineCorrespondences (*corresps);
+*/
+  /*  
+  pcl::registration::CorrespondenceRejectorDistance rejector;
+  rejector.setInputSource<PointT> (source);
+  rejector.setInputTarget<PointT> (target);
+  rejector.setInputCorrespondences (corresps);
+  rejector.setMaximumDistance (0.01);
+  
+  pcl::CorrespondencesPtr corresps_filtered(new pcl::Correspondences);
+  rejector.getCorrespondences (*corresps_filtered);
+  std::cout << "CorrespSize:" << corresps_filtered->size() << '\n' ;
+*/
+  
+  // Apply a Voxel Filter to the input data ////////////////////////////////////
+  pcl::VoxelGrid<PointT> sor;
+  sor.setInputCloud(target);
+  sor.setLeafSize(0.1, 0.1, 0.1);
+  sor.filter(*target);
+
+  sor.setInputCloud(source);
+  sor.setLeafSize(0.1, 0.1, 0.1);
+  sor.filter(*source);
+
+
+/*  
+  // Get Plane Indices /////////////////////////////////////////////////////////
+  PointCloudWithNormals::Ptr icpSource (new PointCloudWithNormals);
+  PointCloudWithNormals::Ptr icpTarget (new PointCloudWithNormals);
+
+  icpSource = extractIndices(source, 1000, 0.01);
+  icpTarget = extractIndices(target, 1000, 0.01);
+
+  sor.setInputCloud(icpSource);
+  sor.setLeafSize(0.05, 0.05, 0.05);
+  sor.filter(*icpSource);
+
+  sor.setInputCloud(icpTarget);
+  sor.setLeafSize(0.05, 0.05, 0.05);
+  sor.filter(*icpTarget);
+
+*/
+
+
+  PointCloudIntensity::Ptr icpSource (new PointCloudIntensity);
+  PointCloudIntensity::Ptr icpTarget (new PointCloudIntensity);
+
+  icpSource = getPlaneCoefsCloud(source, 1000, 0.01);
+  icpTarget = getPlaneCoefsCloud(target, 1000, 0.01);
+
+  // Get Transformation Matrix between clouds //////////////////////////////////
+  Eigen::Matrix4f estimatedMth;
+  Eigen::Matrix4f mth;
+
+  // REGISTRATION EN 2 FASES
+  //estimatedMth = estimMth(icpSource, icpTarget);  // Estimate T with plane indx
+  //PointCloud::Ptr estimatedSource (new PointCloud);
+  //pcl::transformPointCloud (*source, *estimatedSource, estimatedMth);
+  //mth = regClouds(estimatedSource, target);       // ICP 
+
+  // ICP WITH PLANE INDEX
+  //mth = regClouds(icpSource, icpTarget);  
+
+  // ICP WITH CENTROID AND PLANE INDEX
+  //mth = icpWithNormals(icpSource, icpTarget);
+
+  mth = icpWithIntensity(icpSource, icpTarget);
+
+  // ICP  
+  //mth = regClouds(source, target);
+
+  //GENERALIZED ICP        
+  //mth = genICP(source, target);           
+
+  // Transform original clouds using the transformation matrix
+  PointCloud::Ptr tfSource (new PointCloud);
+  pcl::transformPointCloud (*source, *tfSource, mth);
+
+
+  // Visualize clouds //////////////////////////////////////////////////////////
+  
+  CloudColor red   (source, 255, 0, 0);
+  CloudColor green (target, 0, 255, 0);
+
+  CloudColor red2  (tfSource, 255, 0, 0);
+
+  IntensityCloudColor blue (icpSource, 0, 0, 255);
+  IntensityCloudColor ye   (icpTarget, 255, 255, 0);
+  //CloudColor prpl (estimatedSource, 230, 0, 255);
+  //std::cout << icpTarget->size() << '\n';
+  
+  
+  pcl::visualization::PCLVisualizer::Ptr visOriginal (new pcl::visualization::PCLVisualizer ("Original Visualizer"));
+  pcl::visualization::PCLVisualizer::Ptr visTF (new pcl::visualization::PCLVisualizer ("Transformed Visualizer"));
+  
+  //visOriginal->addPointCloud<PointT> (source,    red,   "SourceCloud");
+  //visOriginal->addPointCloud<PointT> (target,    green, "TargetCloud");
+  visOriginal->addPointCloud<pcl::PointXYZI> (icpSource, blue,  "icpNormalSource");
+  visOriginal->addPointCloud<pcl::PointXYZI> (icpTarget, ye,    "icpNormalTarget");
+
+
+  //visOriginal->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "SourceCloud");
+  //visOriginal->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "TargetCloud");
+  visOriginal->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "icpNormalSource");
+  visOriginal->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "icpNormalTarget");
+
+  visTF->addPointCloud<PointT> (target, green, "TargetCloud");
+  visTF->addPointCloud<PointT> (tfSource, red2, "tfSourceCloud");
+  //visTF->addPointCloud<PointT> (estimatedSource, prpl, "EstimatedSource");
+
+  visTF->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "TargetCloud");
+  //visTF->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "tfSourceCloud");
+  visTF->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "EstimatedSource");
+
+
+  while (!visOriginal->wasStopped() && !visTF->wasStopped())
+  {
+    visOriginal->spinOnce (100);
+    visTF->spinOnce (100);
+    //normalVis.spinOnce(100);
+    //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    //std::this_thread::sleep_for(100ms);
+  }
+
+  return 0;
+}
+
+
+// ************************************************************************** //
+// FUNCTIONS DEFINITIONS ///////////////////////////////////////////////////////
+
+
+// FEATURE EXTRACTION //
+
+PointCloud::Ptr getPlaneCoefsCloud(PointCloud::Ptr input, int maxIterations, float threshold){
+  PointCloud::Ptr planeCoefsCloud (new PointCloud);
+  PointCloud::Ptr remainingCloud (new PointCloud);
+  PointCloud::Ptr pCloud (new PointCloud);
+  PointCloud::Ptr fCloud (new PointCloud);
+
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+
+  // Create the segmentation object
+  pcl::SACSegmentation<PointT> seg;
+  
+  // Optional
+  seg.setOptimizeCoefficients (true);
+
+  // Mandatory
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setMaxIterations(maxIterations);
+  seg.setDistanceThreshold(threshold);
+
+  // Create the filtering object
+  pcl::ExtractIndices<PointT> extract;  //Saca puntos de la nube por indice
+
+  int i = 0, nr_points = (int) input->size();
+
+  *remainingCloud = *input;
+
+  // While 30% of the original cloud is still there
+  while (remainingCloud->size () > 0.3 * nr_points)
+  { 
+    std::stringstream ss;
+    ss.str("");
+    ss << "Plane_" << i;
+
+    // Segment the largest planar component from the remaining cloud
+    seg.setInputCloud (remainingCloud);
+    seg.segment (*inliers, *coefficients);
+
+    if (inliers->indices.size () == 0)
+    {
+      std::cerr << "Could not estimate a planar model for the given dataset." << std::endl;
+      break;
+    }
+
+    PointT tmpPoint;
+
+    tmpPoint.x = coefficients->values[0];
+    tmpPoint.y = coefficients->values[1];
+    tmpPoint.z = coefficients->values[2];
+
+    planeCoefsCloud->push_back(tmpPoint);
+
+    // Extract the inliers
+    extract.setInputCloud (remainingCloud);
+    extract.setIndices (inliers);
+    extract.setNegative (false);
+    extract.filter(*pCloud);
+
+    // Create the filtering object
+    extract.setNegative (true);
+    extract.filter (*fCloud);
+    remainingCloud.swap(fCloud);
+    i++;
+  }
+
+  return planeCoefsCloud;
+}
+
+PointCloudIntensity::Ptr getIntensityPlaneCoefsCloud(PointCloud::Ptr input, int maxIterations, float threshold){
+  
+  PointCloudIntensity::Ptr intensityPlaneCoefsCloud (new PointCloudIntensity);
+  PointCloud::Ptr remainingCloud (new PointCloud);
+  PointCloud::Ptr pCloud (new PointCloud);
+  PointCloud::Ptr fCloud (new PointCloud);
+
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+
+  // Create the segmentation object
+  pcl::SACSegmentation<PointT> seg;
+  
+  // Optional
+  seg.setOptimizeCoefficients (true);
+
+  // Mandatory
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setMaxIterations(maxIterations);
+  seg.setDistanceThreshold(threshold);
+
+  // Create the filtering object
+  pcl::ExtractIndices<PointT> extract;
+
+  int i = 0, nr_points = (int) input->size();
+
+  *remainingCloud = *input;
+
+  // While 30% of the original cloud is still there
+  while (remainingCloud->size () > 0.3 * nr_points)
+  { 
+    std::stringstream ss;
+    ss.str("");
+    ss << "Plane_" << i;
+
+    // Segment the largest planar component from the remaining cloud
+    seg.setInputCloud (remainingCloud);
+    seg.segment (*inliers, *coefficients);
+
+    if (inliers->indices.size () == 0)
+    {
+      std::cerr << "Could not estimate a planar model for the given dataset." << std::endl;
+      break;
+    }
+
+    pcl::PointXYZI tmpPoint;
+
+    tmpPoint.x = coefficients->values[0];
+    tmpPoint.y = coefficients->values[1];
+    tmpPoint.z = coefficients->values[2];
+    tmpPoint.intensity = coefficients->values[3];
+     
+    intensityPlaneCoefsCloud->push_back(tmpPoint);
+
+    // Extract the inliers
+    extract.setInputCloud (remainingCloud);
+    extract.setIndices (inliers);
+    extract.setNegative (false);
+    extract.filter(*pCloud);
+
+    // Create the filtering object
+    extract.setNegative (true);
+    extract.filter (*fCloud);
+    remainingCloud.swap(fCloud);
+    i++;
+  }
+
+  return intensityPlaneCoefsCloud;
+}
+
+PointCloudWithNormals::Ptr getCentroidNormalPlaneCloud(PointCloud::Ptr input, int maxIterations, float threshold){
+  PointCloud::Ptr centroidNormalCloud (new PointCloud);
+  PointCloud::Ptr remainingCloud (new PointCloud);
+  PointCloud::Ptr pCloud (new PointCloud);
+  PointCloud::Ptr fCloud (new PointCloud);
+
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+
+  // Create the segmentation object
+  pcl::SACSegmentation<PointT> seg;
+  
+  // Optional
+  seg.setOptimizeCoefficients (true);
+
+  // Mandatory
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setMaxIterations(maxIterations);
+  seg.setDistanceThreshold(threshold);
+
+  // Create the filtering object
+  pcl::ExtractIndices<PointT> extract;  //Saca puntos de la nube por indice
+
+  int i = 0, nr_points = (int) input->size();
+
+  *remainingCloud = *input;
+
+  // While 30% of the original cloud is still there
+  while (remainingCloud->size () > 0.3 * nr_points)
+  { 
+    std::stringstream ss;
+    ss.str("");
+    ss << "Plane_" << i;
+
+    // Segment the largest planar component from the remaining cloud
+    seg.setInputCloud (remainingCloud);
+    seg.segment (*inliers, *coefficients);
+
+    if (inliers->indices.size () == 0)
+    {
+      std::cerr << "Could not estimate a planar model for the given dataset." << std::endl;
+      break;
+    }
+
+    // Extract the inliers
+    extract.setInputCloud (remainingCloud);
+    extract.setIndices (inliers);
+    extract.setNegative (false);
+    extract.filter(*pCloud);
+
+    // CREATE CLOUD WITH CENTROID AND PLANE COEFFS /////////////////////////////
+    Eigen::Vector4f centroid;
+    PointNormalT tmpN_Point;
+
+    pcl::compute3DCentroid (*pCloud, centroid);
+    
+    tmpN_Point.x = centroid[0];
+    tmpN_Point.y = centroid[1];
+    tmpN_Point.z = centroid[2];
+    tmpN_Point.normal_x = coefficients->values[0];
+    tmpN_Point.normal_y = coefficients->values[1];
+    tmpN_Point.normal_z = coefficients->values[2];
+    tmpN_Point.curvature = 1;
+
+    centroidNormalCloud->push_back(tmpN_Point);
+
+    // Create the filtering object
+    extract.setNegative (true);
+    extract.filter (*fCloud);
+    remainingCloud.swap(fCloud);
+    i++;
+  }
+
+  return  centroidNormalCloud;
+}
+
+pcl::PointCloud<pcl::Normal>::Ptr getCloudNormals(PointCloud::Ptr input, float radius){
+
+  // ESTIMATE NORMALS //////////////////////////////////////////////////////////
+  pcl::NormalEstimation<PointT, pcl::Normal> ne;
+  pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
+
+  pcl::PointCloud<pcl::Normal>::Ptr cloudNoramls (new pcl::PointCloud<pcl::Normal>);  
+
+  ne.setInputCloud(input);
+  ne.setSearchMethod (tree);
+  ne.setRadiusSearch(radius);
+  ne.compute(*cloudNoramls);
+
+  std::cout << "Input Size:" << input->size() << '\n' << "Cloud Normals Size: " <<
+  cloudNoramls->size() << std::endl;  
+
+  //pcl::visualization::PCLVisualizer normalVis ("Normals Visualizer");
+  //normalVis.addPointCloudNormals<PointT, pcl::Normal> (input, cloudNormals);
+
+  return cloudNoramls;
+}
+
+// REGISTRATION //
+
+Eigen::Matrix4f icpDefault(PointCloud::Ptr source, PointCloud::Ptr target){
+
+  pcl::IterativeClosestPoint<PointT, PointT> icp;
+
+  PointCloud tmpOutputCloud;
+  //icp.setTransformationEstimation();
+  //icp.setMaxCorrespondenceDistance(0.01);
+  icp.setInputSource(source);
+  icp.setInputTarget(target);
+  icp.setMaximumIterations(1000);
+  //icp.setTransformationEpsilon(1e-20);
+  //icp.setEuclideanFitnessEpsilon(0.001);
+
+  icp.align(tmpOutputCloud);
+
+  Eigen::Matrix4f mth;
+  mth = icp.getFinalTransformation();
+
+  std::cout << "Has converged:" << icp.hasConverged() << " score: " <<
+  icp.getFitnessScore() << std::endl;
+  //std::cout << icp.getFinalTransformation() << std::endl;
+
+  return mth;
+}
+
+Eigen::Matrix4f icpWithNormals(PointCloudWithNormals::Ptr source, PointCloudWithNormals::Ptr target){
+
+  pcl::IterativeClosestPoint<PointNormalT, PointNormalT> icp;
+
+  PointCloudWithNormals tmpOutputCloud;
+  //icp.setTransformationEstimation();
+  //icp.setMaxCorrespondenceDistance(0.01);
+  icp.setInputSource(source);
+  icp.setInputTarget(target);
+  icp.setMaximumIterations(1000);
+  //icp.setTransformationEpsilon(1e-20);
+  //icp.setEuclideanFitnessEpsilon(0.001);
+
+  icp.align(tmpOutputCloud);
+
+  Eigen::Matrix4f mth;
+  mth = icp.getFinalTransformation();
+
+  std::cout << "Has converged:" << icp.hasConverged() << " score: " <<
+  icp.getFitnessScore() << std::endl;
+  //std::cout << icp.getFinalTransformation() << std::endl;
+
+  return mth;
+}
+
+Eigen::Matrix4f icpWithIntensity(PointCloudIntensity::Ptr source, PointCloudIntensity::Ptr target){
+
+  pcl::IterativeClosestPoint<pcl::PointXYZI, pcl::PointXYZI> icp;
+
+  PointCloudIntensity tmpOutputCloud;
+  //icp.setTransformationEstimation();
+  //icp.setMaxCorrespondenceDistance(0.01);
+  icp.setInputSource(source);
+  icp.setInputTarget(target);
+  icp.setMaximumIterations(1000);
+  //icp.setTransformationEpsilon(1e-20);
+  //icp.setEuclideanFitnessEpsilon(0.001);
+
+  icp.align(tmpOutputCloud);
+
+  Eigen::Matrix4f mth;
+  mth = icp.getFinalTransformation();
+
+  std::cout << "Has converged:" << icp.hasConverged() << " score: " <<
+  icp.getFitnessScore() << std::endl;
+  //std::cout << icp.getFinalTransformation() << std::endl;
+
+  return mth;
+}
+
+Eigen::Matrix4f estimMth(PointCloud::Ptr source, PointCloud::Ptr target){
+  
+  pcl::IterativeClosestPoint<PointT, PointT> icp;
+
+  PointCloud tmpOutputCloud;
+  PointCloud::Ptr aproxedCloud (new PointCloud);
+  //icp.setTransformationEstimation();
+  //icp.setMaxCorrespondenceDistance(0.01);
+  icp.setInputSource(source);
+  icp.setInputTarget(target);
+  icp.setMaximumIterations(1000);
+  icp.setTransformationEpsilon(1e-20);
+  icp.setEuclideanFitnessEpsilon(0.00001);
+
+  icp.align(tmpOutputCloud);
+
+  Eigen::Matrix4f mth;
+  mth = icp.getFinalTransformation();
+
+  pcl::transformPointCloud (*source, *aproxedCloud, mth);
+
+  std::cout << "Has converged:" << icp.hasConverged() << " score: " <<
+  icp.getFitnessScore() << std::endl;
+  //std::cout << icp.getFinalTransformation() << std::endl;
+
+  return mth;
+}
+
+Eigen::Matrix4f icpGeneralized(PointCloud::Ptr source, PointCloud::Ptr target){
+
+  pcl::GeneralizedIterativeClosestPoint<PointT, PointT> genIcp;
+
+  PointCloud::Ptr result (new PointCloud);
+
+  genIcp.setInputSource(source);
+  genIcp.setInputTarget(target);
+  
+  genIcp.align(*result);
+
+  Eigen::Matrix4f mth;
+  mth = genIcp.getFinalTransformation();
+
+  std::cout << "Has converged:" << genIcp.hasConverged() << " score: " <<
+  genIcp.getFitnessScore() << std::endl;
+
+  return mth;
+}
+
+

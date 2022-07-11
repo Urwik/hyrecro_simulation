@@ -1,0 +1,395 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="hyrecro">
+
+  <gazebo reference="hyrecro">
+    <static>true</static>
+  </gazebo>
+  
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+  
+ 
+
+  <xacro:include filename="$(find hyrecro)/urdf/hyrecro_materials.xacro"/>
+  <xacro:property name="PI"  value="3.1415926535897931"/>
+  <xacro:property name="plat_size_x" value="0.1"/>
+  <xacro:property name="plat_size_y" value="0.1"/>
+  <xacro:property name="plat_size_z" value="0.01"/>
+  <xacro:property name="hip_size_x" value="0.25"/>
+  <xacro:property name="hip_size_y" value="0.1"/>
+  <xacro:property name="hip_size_z" value="0.01"/>
+  <xacro:property name="leg_diam" value="0.02"/>
+  <xacro:property name="leg_max" value="0.3"/>
+  <xacro:property name="leg_min" value="0.1"/>
+  <xacro:property name="leg_z" value="${leg_max/2}"/>
+  <xacro:property name="extra" value="0.05"/>
+  <xacro:property name="fixed_leg" value="A"/>
+  <xacro:property name="t" value="0.15"/>
+  <xacro:property name="tobillo_h" value="0.04"/>
+  
+
+<!--LINKS DECLARATION-->
+
+
+  <link name="base_link"/>
+
+  <link name="joint_1A"/>
+  <link name="joint_2A"/>
+  <link name="theta_A"/>
+  <link name="joint_1B"/>
+  <link name="joint_2B"/>
+  <link name="theta_B"/>
+
+  <link name="plat_1A">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+  
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+          <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="prism_1A">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+          <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="prism_2A">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="plat_2A">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="hip">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${hip_size_x} ${hip_size_y} ${hip_size_z}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${hip_size_x} ${hip_size_y} ${hip_size_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="plat_2B">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="prism_2B">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="prism_1B">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+          <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${leg_diam} ${leg_diam} ${leg_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+  <link name="plat_1B">
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+  
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+          <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${plat_size_x} ${plat_size_y} ${plat_size_z}"/>
+      </geometry>
+    </collision>
+
+  </link>
+
+<!--JOINTS DECLARATION-->
+
+<!-- A -->
+
+  <joint name="base_link_plat_1A" type="fixed">
+    <parent link="base_link"/>
+    <child link="plat_1A"/>
+    <origin xyz="0.0 0.0 ${plat_size_z/2}" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="q1" type="revolute">
+    <parent link="plat_1A"/>
+    <child link="joint_1A"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <origin xyz="0.0 0.0 ${tobillo_h - (plat_size_z/2)}" rpy="${PI/2} 0.0 0.0"/>
+    <limit lower="-${PI/2}" upper="${PI/2}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="prism_1A_joint_1A" type="fixed">
+    <parent link="joint_1A"/>
+    <child link="prism_1A"/>
+    <origin xyz="0.0 ${leg_z/2} 0.0" rpy="-${PI/2} 0.0 0.0"/>
+  </joint>
+
+  <joint name="q2" type="prismatic">
+    <parent link="prism_1A"/>
+    <child link="prism_2A"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <origin xyz="0.0 0.0 ${extra}" rpy="0.0 0.0 0.0"/>
+    <limit lower="-${extra/2}" upper="${extra/2}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="q3" type="revolute">
+    <parent link="prism_2A"/>
+    <child link="joint_2A"/>
+    <origin xyz="0.0 0.0 ${leg_z/2}" rpy="${PI/2} 0.0 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit lower="-${PI/2}" upper="${PI/2}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="joint_2_plat_2A" type="fixed">
+    <origin xyz="0.0 ${tobillo_h-(plat_size_z/2)} 0.0" rpy="-${PI/2} 0.0 0.0"/>
+    <parent link="joint_2A"/>
+    <child link="plat_2A"/>
+  </joint>
+
+  <joint name="q4" type="revolute">
+    <parent link="plat_2A"/>
+    <child link="theta_A"/>
+    <origin xyz="0.0 0.0 ${0.005+ ((plat_size_z+hip_size_z)/2)}" rpy="0.0 0.0 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit lower="-${PI}" upper="${PI}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="theta_A_hip" type="fixed">
+    <parent link="theta_A"/>
+    <child link="hip"/>
+    <origin xyz="${t/2} 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  
+<!-- B -->
+
+  <joint name="q5" type="revolute">
+    <parent link="hip"/>
+    <child link="theta_B"/>
+    <origin xyz="${t/2} 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit lower="-${PI}" upper="${PI}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="theta_B_plat_2B" type="fixed">
+    <parent link="theta_B"/>
+    <child link="plat_2B"/>
+    <origin xyz="0.0 0.0 -${0.005+ ((plat_size_z+hip_size_z)/2)}" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <joint name="q6" type="revolute">
+    <parent link="plat_2B"/>
+    <child link="joint_2B"/>
+    <origin xyz="0.0 0.0 -${tobillo_h-(plat_size_z/2)}" rpy="${PI/2} 0.0 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit lower="-${PI/2}" upper="${PI/2}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="joint_2B_prism_2B" type="fixed">
+    <parent link="joint_2B"/>
+    <child link="prism_2B"/>
+    <origin xyz="0.0 -${leg_z/2} 0.0" rpy="-${PI/2} 0.0 0.0"/>
+
+  </joint>
+
+  <joint name="q7" type="prismatic">
+    <parent link="prism_2B"/>
+    <child link="prism_1B"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <origin xyz="0.0 0.0 -${extra}" rpy="0.0 0.0 0.0"/>
+    <limit lower="-${extra/2}" upper="${extra/2}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="q8" type="revolute">
+    <parent link="prism_1B"/>
+    <child link="joint_1B"/>
+    <origin xyz="0.0 0.0 -${leg_z/2}" rpy="${PI/2} 0.0 0.0"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <limit lower="-${PI/2}" upper="${PI/2}" effort="100" velocity="0.1"/>
+  </joint>
+
+  <joint name="joint_1B_plat_1B" type="fixed">
+    <parent link="joint_1B"/>
+    <child link="plat_1B"/>
+    <origin xyz="0.0 -${tobillo_h - (plat_size_z/2)} 0.0" rpy="-${PI/2} 0.0 0.0"/>
+  </joint>  
+
+  <gazebo reference="hyrecro">
+    <material>Gzebo/Blue/</material>
+  </gazebo>
+
+
+  <xacro:sensor_d435 name="camera" topics_ns="camera" parent="hip" publish_pointcloud="true">
+    <origin xyz="0 0 0.025" rpy="0 0 0" />
+  </xacro:sensor_d435> 
+  
+  <!-- <gazebo>
+    <plugin name="gazebo_ros_hyrecro_joints_controller" filename="libgazebo_ros_hyrecro_joints_controller.so"/>
+  </gazebo> -->
+
+    </robot>
+
+  <!-- A CONFIGURATION -->

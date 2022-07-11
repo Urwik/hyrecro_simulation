@@ -1,0 +1,13 @@
+<launch>
+
+  <arg name="data_path"       value="$(find hyrecro_pcl)/dataSets/set0/Filtered"/>
+  <arg name="icp_method"      value="point_plane"/> <!--"point_point", "point_plane", "plane_plane"-->
+  <arg name="num_of_clouds"   value="75"/> 
+
+  <node name="offline_mapping" pkg="hyrecro_pcl" type="offline_mapping" output="screen"  
+  args="$(arg data_path) $(arg icp_method) $(arg num_of_clouds)"/>
+
+  <node name="rviz" pkg="rviz" type="rviz"  
+  args="-d $(find hyrecro_pcl)/rviz/offline_mapping.rviz"/>
+
+</launch>

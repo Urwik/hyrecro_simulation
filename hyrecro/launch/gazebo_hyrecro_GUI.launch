@@ -1,0 +1,43 @@
+<launch>
+
+  <env name="GAZEBO_MODEL_PATH" value="$(find hyrecro)/sdf" />
+
+  <arg name="urdfdescription" default="$(find hyrecro)/urdf/hyrecro_realsense.xacro"/>
+
+  <param name="robot_description" command="$(find xacro)/xacro $(arg urdfdescription)" />
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  
+  <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+
+
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  <arg name="model" default="$(find hyrecro)/sdf/hyrecro_A_serial_realsense/model.sdf"/>
+  
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find hyrecro)/worlds/reticular_GUI_plugin.world"/>
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="physics" default="ode"/> 
+  </include>
+
+  <arg name="x" default="0"/>     <arg name="R" default="0" />
+  <arg name="y" default="-0.7"/>  <arg name="P" default="0"/>
+  <arg name="z" default="10.25"/>   <arg name="Y" default="1.57"/>
+  
+  <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
+  <node name="hyrecro_spawn_urdf" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" 
+  args="-file $(arg model) -sdf -x $(arg x) -y $(arg y) -z $(arg z) -R $(arg R) -P $(arg P) -Y $(arg Y) -model hyrecro_A_serial_realsense"/>
+
+
+  <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find hyrecro)/rviz/rviz_hyrecro_realsense.rviz" /> -->
+</launch>

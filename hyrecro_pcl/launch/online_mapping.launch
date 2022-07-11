@@ -1,0 +1,13 @@
+<launch>
+
+  <arg name="cloud_topic"     value="/camera/depth/color/points"/>
+  <arg name="icp_method"      value="plane_plane"/> <!--"point_point", "point_plane", "plane_plane"-->
+  <arg name="output_path"     value="$(find hyrecro_pcl)/maps"/>
+
+  <node name="offline_mapping" pkg="hyrecro_pcl" type="offline_mapping" output="screen"  
+  args="$(arg cloud_topic) $(arg icp_method) $(arg output_path)"/>
+
+  <node name="rviz" pkg="rviz" type="rviz"  
+  args="-d $(find hyrecro_pcl)/rviz/offline_mapping.rviz"/>
+
+</launch>

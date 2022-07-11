@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot name="sensor_d435i" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro"/>
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i_imu_modules.urdf.xacro"/>
+
+ <link name="link_name">
+   <inertial>
+     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+     <mass value="1.0"/>
+     <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+   </inertial>
+   <visual name="">
+     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+     <geometry>
+       <box size="0.05 0.01 0.01"/>
+     </geometry>
+     <material name="">
+       <color rgba="1.0 0.0 0.0 1.0"/>
+       <texture filename=""/>
+     </material>
+   </visual>
+   <collision>
+     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+     <geometry>
+       <box size="0.05 0.01 0.01"/>
+     </geometry>
+   </collision>
+ </link> 
+
+  <xacro:macro name="sensor_d435i" params="parent *origin name:=camera use_nominal_extrinsics:=false">
+    <xacro:sensor_d435 parent="${parent}" name="${name}" use_nominal_extrinsics="${use_nominal_extrinsics}">
+      <xacro:insert_block name="origin" />
+    </xacro:sensor_d435>
+    <xacro:d435i_imu_modules name="${name}" use_nominal_extrinsics="${use_nominal_extrinsics}"/>
+  </xacro:macro>
+</robot>

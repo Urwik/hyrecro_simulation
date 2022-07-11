@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<robot>
+  <xacro:property name="M_PI"       value="3.1415926535897931"  />
+  <xacro:property name="hz"         value="1"                   />
+  <xacro:property name="samples"    value="512"                 />
+  <xacro:property name="min_angle"  value="-${M_PI}"            />
+  <xacro:property name="max_angle"  value="${M_PI}"             />
+  <xacro:property name="lasers"     value="64"                  />
+  <xacro:property name="min_range"  value="0.225"               />
+  <xacro:property name="max_range"  value="100.0"               />
+  <xacro:property name="min_range"  value="3.1415926535897931"  />
+  <xacro:property name="topic"      value="/os1/pointcloud2"    />
+  <xacro:property name="name"       value="os1_sensor"          />
+  <xacro:property name="noise"      value="0.008"               />
+    
+  <gazebo reference="os1_link">
+    <sensor type="ray" name="os1_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>${hz}</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>${samples}</samples>
+            <resolution>1</resolution>
+            <min_angle>${min_angle}</min_angle>
+            <max_angle>${max_angle}</max_angle>
+          </horizontal>
+          <vertical>
+            <samples>${lasers}</samples>
+            <resolution>1</resolution>
+            <min_angle>-${16.611*M_PI/180.0}</min_angle>
+            <max_angle>${16.611*M_PI/180.0}</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>${min_range}</min>
+          <max>${max_range}</max>
+          <resolution>0.03</resolution>
+        </range>
+      </ray>
+      <!--
+      <plugin name="gazebo_ros_laser_controller" filename="libgazebo_ros_lidar.so">
+        <topicName>${topic}</topicName>
+        <frameName>${name}</frameName>
+        <min_range>${min_range}</min_range>
+        <max_range>${max_range}</max_range>
+        <gaussianNoise>${noise}</gaussianNoise>
+      </plugin>
+      -->
+    </sensor>
+  </gazebo>
+
+
+</robot>

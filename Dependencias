@@ -1,0 +1,8 @@
+Además de estos paquetes, se requieren los paquetes:
+  - https://github.com/issaiass/realsense2_description
+  - https://github.com/issaiass/realsense_gazebo_plugin
+  - https://github.com/ouster-lidar/ouster_example
+
+Si se producen errores probar además a descargar:
+  - https://github.com/ros-simulation/gazebo_ros_pkgs
+  - https://github.com/ros-simulation/gazebo_ros_demos
